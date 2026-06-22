@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <title><%= announcement.title %></title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <div class="container">
+    <a href="/" class="back-link">← На головну сторінку</a>
+
+    <div class="detail-box">
+      <span class="badge"><%= categoryMap[announcement.category] || announcement.category %></span>
+      <h1 style="margin-top: 10px; font-size: 26px;"><%= announcement.title %></h1>
+      
+      <div class="meta-info">
+        <span class="price">Ціна: <%= announcement.price %> грн</span>
+        <span class="date">Опубліковано: <%= new Date(announcement.createdAt).toLocaleDateString('uk-UA', { day: 'numeric', month: 'long', year: 'numeric' }) %></span>
+      </div>
+
+      <div class="detail-desc"><%= announcement.description %></div>
+
+      <div class="contacts-block">
+        <strong>Контакти автора:</strong>
+        <p style="margin-top: 5px; color: #111827;"><%= announcement.contactInfo %></p>
+      </div>
+
+      <button id="delete-btn" class="btn btn-danger">Видалити оголошення</button>
+    </div>
+  </div>
+
+  <script>
+    const deleteBtn = document.querySelector('#delete-btn');
+    const announcementId = Number('<%= announcement.id %>');
+
+    deleteBtn.addEventListener('click', async () => {
+      if (!confirm('Ви впевнені що хочете видалити це оголошення?')) {
+        return;
+      }
+
+      try {
+        const response = await fetch(`/announcements/${announcementId}`, {
+          method: 'DELETE'
+        });
+
+        if (response.ok) {
+          window.location.href = '/';
+        } else {
+          alert('Не вдалося видалити оголошення з сервера.');
+        }
+      } catch (error) {
+        console.error(error);
+        alert('Помилка з\'єднання при спробі видалення.');
+      }
+    });
+  </script>
+</body>
+</html>
