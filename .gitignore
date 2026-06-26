@@ -4,8 +4,8 @@ yarn-error.log
 .env
 dev.db
 dev.db-journal
-/generated/prisma
-src
+generated
+src/generated
 .DS_Store
 .vscode/
 .idea/

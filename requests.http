@@ -1,0 +1,71 @@
+@baseUrl = http://localhost:3000
+@existingId = 1
+@nonExistingId = 9999
+
+### 1. GET /announcements без параметрів
+GET {{baseUrl}}/announcements
+
+### 2. GET /announcements з параметром search
+GET {{baseUrl}}/announcements?search=ноутбук
+
+### 3. GET /announcements з параметрами sort та page
+GET {{baseUrl}}/announcements?sort=oldest&page=1
+
+### 4. GET /announcements/:id з id який існує
+GET {{baseUrl}}/announcements/{{existingId}}
+
+### 5. GET /announcements/:id з ID якого не існує в базі
+GET {{baseUrl}}/announcements/{{nonExistingId}}
+
+### 6. POST /announcements з валідними даними
+POST {{baseUrl}}/announcements
+Content-Type: application/json
+
+{
+  "title": "Продам ігровий ПК",
+  "description": "Intel Core i7, RTX 4070, 32GB RAM, стан нового.",
+  "price": 45000,
+  "category": "sale",
+  "contactInfo": "+380991234567"
+}
+
+### 7. POST /announcements з невалідними даними (коротка назва та невідома категорія)
+POST {{baseUrl}}/announcements
+Content-Type: application/json
+
+{
+  "title": "ПК",
+  "description": "Короткий",
+  "price": -100,
+  "category": "wrong_category",
+  "contactInfo": "123"
+}
+
+### 8. PATCH /announcements/:id з частковими даними
+PATCH {{baseUrl}}/announcements/{{existingId}}
+Content-Type: application/json
+
+{
+  "price": 42000,
+  "title": "Продам ігровий ПК (Терміново!)"
+}
+
+### 9. PATCH /announcements/:id з ID якого не існує в базі
+PATCH {{baseUrl}}/announcements/{{nonExistingId}}
+Content-Type: application/json
+
+{
+  "title": "Оновлення неіснуючого"
+}
+
+### 10. PATCH /announcements/:id з порожнім об'єктом (має повернути 400)
+PATCH {{baseUrl}}/announcements/{{existingId}}
+Content-Type: application/json
+
+{}
+
+### 11. DELETE /announcements/:id
+DELETE {{baseUrl}}/announcements/{{existingId}}
+
+### 12. DELETE /announcements/:id з ID якого не існує в базі
+DELETE {{baseUrl}}/announcements/{{nonExistingId}}
