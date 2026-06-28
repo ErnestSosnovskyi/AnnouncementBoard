@@ -110,7 +110,7 @@ npm run dev
 ## 📂 Структура проєкту
 
 ```Plaintext
-hw4/
+announcement-board/
 ├── prisma/
 │   ├── schema.prisma           # Оновлена схема БД (моделі User, RefreshToken, Announcement)
 │   ├── client.js               # Експорт ініціалізованого Prisma Client
