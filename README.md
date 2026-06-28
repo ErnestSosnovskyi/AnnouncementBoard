@@ -42,7 +42,7 @@
 Клонуйте репозиторій та встановіть усі необхідні пакети:
 
 ```bash
-git clone [https://github.com/ErnestSosnovskyi/AnnouncementBoard.git](https://github.com/ErnestSosnovskyi/AnnouncementBoard.git)
+git clone https://github.com/ErnestSosnovskyi/AnnouncementBoard.git
 cd AnnouncementBoard
 npm install
 ```
