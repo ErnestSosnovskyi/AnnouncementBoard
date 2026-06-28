@@ -2,6 +2,86 @@
 @existingId = 1
 @nonExistingId = 9999
 
+@tokenUser1 = eyJhbGci...
+@tokenUser2 = eyJhbGci...
+@refreshToken = eyJhbGci...
+
+# ==========================================
+# 🔐 AUTH МАРШРУТИ
+# ==========================================
+
+### А1. Реєстрація Користувача 1 (Іван)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "ivan_petrenko",
+  "password": "password123",
+  "name": "Ivan"
+}
+
+### А2. Реєстрація Користувача 2 (Марія - для тестування Ownership)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "mariia_koval",
+  "password": "securepwd456",
+  "name": "Mariia"
+}
+
+### А3. Повторна реєстрація з тим самим username (Має повернути 409)
+POST {{baseUrl}}/auth/register
+Content-Type: application/json
+
+{
+  "username": "ivan_petrenko",
+  "password": "password123",
+  "name": "Iavan"
+}
+
+### А4. Вхід Користувача 1 (Отримання токенів)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "ivan_petrenko",
+  "password": "password123"
+}
+
+### А5. Вхід з невірним паролем / юзером (Має повернути 401)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "ivan_petrenko",
+  "password": "wrong_password"
+}
+
+### А6. Оновлення access токена через Refresh Token
+POST {{baseUrl}}/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+### А7. Отримання профілю поточного користувача (Користувач 1)
+GET {{baseUrl}}/auth/me
+Authorization: Bearer {{tokenUser1}}
+
+### А8. Вихід з системи (Інвалідація refresh токена)
+POST {{baseUrl}}/auth/logout
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}
+
+# ==========================================
+# 📢 ПУБЛІЧНІ МАРШРУТИ ОГОЛОШЕНЬ
+# ==========================================
+
 ### 1. GET /announcements без параметрів
 GET {{baseUrl}}/announcements
 
@@ -17,8 +97,23 @@ GET {{baseUrl}}/announcements/{{existingId}}
 ### 5. GET /announcements/:id з ID якого не існує в базі
 GET {{baseUrl}}/announcements/{{nonExistingId}}
 
-### 6. POST /announcements з валідними даними
+# ==========================================
+# 🛡️ ЗАХИЩЕНІ МАРШРУТИ ТА ПЕРЕВІРКА OWNERSHIP
+# ==========================================
+
+### 6. POST /announcements БЕЗ токена (Має повернути 401)
 POST {{baseUrl}}/announcements
+Content-Type: application/json
+
+{
+  "title": "Спроба зламу",
+  "description": "Без авторизації",
+  "price": 1000
+}
+
+### 7. POST /announcements від імені Користувача 1 (Успішно, userId = 1)
+POST {{baseUrl}}/announcements
+Authorization: Bearer {{tokenUser1}}
 Content-Type: application/json
 
 {
@@ -29,8 +124,9 @@ Content-Type: application/json
   "contactInfo": "+380991234567"
 }
 
-### 7. POST /announcements з невалідними даними (коротка назва та невідома категорія)
+### 8. POST /announcements з невалідними даними (Валідація celebrate працює)
 POST {{baseUrl}}/announcements
+Authorization: Bearer {{tokenUser1}}
 Content-Type: application/json
 
 {
@@ -41,8 +137,10 @@ Content-Type: application/json
   "contactInfo": "123"
 }
 
-### 8. PATCH /announcements/:id з частковими даними
+### 9. PATCH /announcements/:id СВОГО оголошення Користувачем 1 (Успішно 200)
+# (Переконайся, що existingId належить ivan_petrenko)
 PATCH {{baseUrl}}/announcements/{{existingId}}
+Authorization: Bearer {{tokenUser1}}
 Content-Type: application/json
 
 {
@@ -50,22 +148,41 @@ Content-Type: application/json
   "title": "Продам ігровий ПК (Терміново!)"
 }
 
-### 9. PATCH /announcements/:id з ID якого не існує в базі
+### 10. PATCH /announcements/:id ЧУЖОГО оголошення Користувачем 2 (Має повернути 403)
+# Марія (User 2) намагається відредагувати оголошення Івана (User 1)
+PATCH {{baseUrl}}/announcements/{{existingId}}
+Authorization: Bearer {{tokenUser2}}
+Content-Type: application/json
+
+{
+  "title": "Марія хакнула оголошення"
+}
+
+### 11. PATCH /announcements/:id з ID якого не існує (Має повернути 404)
 PATCH {{baseUrl}}/announcements/{{nonExistingId}}
+Authorization: Bearer {{tokenUser1}}
 Content-Type: application/json
 
 {
   "title": "Оновлення неіснуючого"
 }
 
-### 10. PATCH /announcements/:id з порожнім об'єктом (має повернути 400)
+### 12. PATCH /announcements/:id з порожнім об'єктом (Має повернути 400)
 PATCH {{baseUrl}}/announcements/{{existingId}}
+Authorization: Bearer {{tokenUser1}}
 Content-Type: application/json
 
 {}
 
-### 11. DELETE /announcements/:id
+### 13. DELETE /announcements/:id ЧУЖОГО оголошення Користувачем 2 (Має повернути 403)
+# Марія намагається видалити оголошення Івана
 DELETE {{baseUrl}}/announcements/{{existingId}}
+Authorization: Bearer {{tokenUser2}}
 
-### 12. DELETE /announcements/:id з ID якого не існує в базі
+### 14. DELETE /announcements/:id СВОГО оголошення Користувачем 1 (Успішно 204)
+DELETE {{baseUrl}}/announcements/{{existingId}}
+Authorization: Bearer {{tokenUser1}}
+
+### 15. DELETE /announcements/:id з ID якого не існує (Має повернути 404)
 DELETE {{baseUrl}}/announcements/{{nonExistingId}}
+Authorization: Bearer {{tokenUser1}}
