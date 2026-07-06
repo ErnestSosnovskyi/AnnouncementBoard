@@ -1,18 +1,48 @@
 import 'dotenv/config';
 import express from 'express';
+import helmet from 'helmet';
+import cors from 'cors';
+import { rateLimit } from 'express-rate-limit';
+import pinoHttp from 'pino-http';
 import swaggerJsDoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
 import { errors as celebrateErrorsHandler } from 'celebrate';
-import announcementsRouter from './src/routes/announcements.routes.js';
 import cookieParser from 'cookie-parser';
+
+import logger from './src/logger.js';
+import announcementsRouter from './src/routes/announcements.routes.js';
 import authRoutes from './src/routes/auth.routes.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+app.use(pinoHttp({ logger }));
+app.use(helmet());
+
+const allowedOrigins = process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : [];
+app.use(cors({
+    origin: (origin, callback) => {
+        if (!origin) return callback(null, true);
+        if (allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    }
+}));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
+
+const authRateLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    limit: 10,
+    handler: (req, res) => {
+        logger.warn(`Перевищено ліміт запитів для IP: ${req.ip}`);
+        res.status(429).json({ message: 'Too many requests, please try again later' });
+    }
+});
 
 app.use('/auth', authRoutes);
 app.use('/announcements', announcementsRouter);
@@ -23,7 +53,7 @@ const swaggerOptions = {
         info: {
             title: 'Announcement Board API',
             version: '1.0.0',
-            description: 'RESTful API для Дошки оголошень',
+            description: 'RESTful API для Дошки оголошень з безпекою, логуванням та фото',
         },
         servers: [
             {
@@ -145,7 +175,7 @@ const swaggerOptions = {
                     requestBody: {
                         required: true,
                         content: {
-                            'application/json': {
+                            'multipart/form-data': {
                                 schema: {
                                     type: 'object',
                                     required: ['title', 'description', 'price', 'category', 'contactInfo'],
@@ -154,7 +184,8 @@ const swaggerOptions = {
                                         description: { type: 'string', example: 'Відмінний стан, 16GB RAM, SSD 512GB' },
                                         price: { type: 'number', example: 18000 },
                                         category: { type: 'string', enum: ['sale', 'service', 'job', 'other'], example: 'sale' },
-                                        contactInfo: { type: 'string', example: '0991234567' }
+                                        contactInfo: { type: 'string', example: '0991234567' },
+                                        imageUrl: { type: 'string', format: 'binary', description: 'Файл зображення оголошення (опціонально)'}
                                     }
                                 }
                             }
@@ -180,7 +211,7 @@ const swaggerOptions = {
                     },
                 },
                 patch: {
-                    summary: 'Частково оновити оголошення',
+                    summary: 'Частково оновити оголошення (Підтримує завантаження/оновлення фото)',
                     tags: ['Announcements'],
                     security: [{ BearerAuth: [] }],
                     parameters: [
@@ -189,7 +220,7 @@ const swaggerOptions = {
                     requestBody: {
                         required: true,
                         content: {
-                            'application/json': {
+                            'multipart/form-data': {
                                 schema: {
                                     type: 'object',
                                     properties: {
@@ -197,7 +228,8 @@ const swaggerOptions = {
                                         description: { type: 'string', example: 'Оновлений опис для оголошення' },
                                         price: { type: 'number', example: 17500 },
                                         category: { type: 'string', enum: ['sale', 'service', 'job', 'other'], example: 'sale' },
-                                        contactInfo: { type: 'string', example: '0997654321' }
+                                        contactInfo: { type: 'string', example: '0997654321' },
+                                        imageUrl: { type: 'string', format: 'binary', description: 'Новий файл зображення оголошення' }
                                     }
                                 }
                             }
@@ -255,7 +287,7 @@ app.use((err, req, res, next) => {
         const statusCode = err.status || err.statusCode;
         return res.status(statusCode).json({ error: err.message });
     }
-    console.log('КРИТИЧНА_ПОМИЛКА_СЕРВЕРА:', err);
+    logger.error({ err }, 'КРИТИЧНА_ПОМИЛКА_СЕРВЕРА');
     res.status(500).json({ error: 'Внутрішня помилка сервера' });
 });
 

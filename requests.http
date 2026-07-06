@@ -49,6 +49,15 @@ Content-Type: application/json
   "password": "password123"
 }
 
+### A4.1. Тест Rate Limiting на маршрут авторизації (не більше 10 разів поспіль)
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+  "username": "ivan_petrenko",
+  "password": "wrong_password"
+}
+
 ### А5. Вхід з невірним паролем / юзером (Має повернути 401)
 POST {{baseUrl}}/auth/login
 Content-Type: application/json
@@ -111,18 +120,37 @@ Content-Type: application/json
   "price": 1000
 }
 
-### 7. POST /announcements від імені Користувача 1 (Успішно, userId = 1)
+### 7. POST /announcements від імені Користувача 1 (Успішно, з фотографією)
 POST {{baseUrl}}/announcements
 Authorization: Bearer {{tokenUser1}}
-Content-Type: application/json
+Content-Type: multipart/form-data; boundary=BoundaryMultipart
 
-{
-  "title": "Продам ігровий ПК",
-  "description": "Intel Core i7, RTX 4070, 32GB RAM, стан нового.",
-  "price": 45000,
-  "category": "sale",
-  "contactInfo": "+380991234567"
-}
+--BoundaryMultipart
+Content-Disposition: form-data; name="title"
+
+Продам ігровий ПК
+--BoundaryMultipart
+Content-Disposition: form-data; name="description"
+
+Intel Core i7, RTX 4070, 32GB RAM, стан нового.
+--BoundaryMultipart
+Content-Disposition: form-data; name="price"
+
+45000
+--BoundaryMultipart
+Content-Disposition: form-data; name="category"
+
+sale
+--BoundaryMultipart
+Content-Disposition: form-data; name="contactInfo"
+
++380991234567
+--BoundaryMultipart
+Content-Disposition: form-data; name="imageUrl"; filename="bike.jpg"
+Content-Type: image/jpeg
+
+< ./bike.jpg
+--BoundaryMultipart--
 
 ### 8. POST /announcements з невалідними даними (Валідація celebrate працює)
 POST {{baseUrl}}/announcements
@@ -137,16 +165,25 @@ Content-Type: application/json
   "contactInfo": "123"
 }
 
-### 9. PATCH /announcements/:id СВОГО оголошення Користувачем 1 (Успішно 200)
-# (Переконайся, що existingId належить ivan_petrenko)
+### 9. PATCH /announcements/:id СВОГО оголошення Користувачем 1 (Успішно, оновлення фото)
 PATCH {{baseUrl}}/announcements/{{existingId}}
 Authorization: Bearer {{tokenUser1}}
-Content-Type: application/json
+Content-Type: multipart/form-data; boundary=BoundaryMultipart
 
-{
-  "price": 42000,
-  "title": "Продам ігровий ПК (Терміново!)"
-}
+--BoundaryMultipart
+Content-Disposition: form-data; name="price"
+
+42000
+--BoundaryMultipart
+Content-Disposition: form-data; name="title"
+
+Продам ігровий ПК (Терміново!)
+--BoundaryMultipart
+Content-Disposition: form-data; name="imageUrl"; filename="new_bike.png"
+Content-Type: image/png
+
+< ./bike.jpg
+--BoundaryMultipart--
 
 ### 10. PATCH /announcements/:id ЧУЖОГО оголошення Користувачем 2 (Має повернути 403)
 # Марія (User 2) намагається відредагувати оголошення Івана (User 1)

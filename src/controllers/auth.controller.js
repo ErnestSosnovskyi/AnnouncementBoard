@@ -1,4 +1,5 @@
 import prisma from '../../prisma/client.js';
+import logger from '../logger.js';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import createHttpError from 'http-errors';
@@ -51,6 +52,8 @@ const register = async (req, res, next) => {
 
         setRefreshCookie(res, refreshToken);
 
+        logger.info({ userId: user.id, username: user.username }, 'Користувач успішно зареєстрований');
+
         res.status(201).json({
             user: { id: user.id, username: user.username, name: user.name },
             accessToken,
@@ -84,6 +87,8 @@ const login = async (req, res, next) => {
         });
 
         setRefreshCookie(res, refreshToken);
+
+        logger.info({ userId: user.id, username: user.username }, 'User logged in successfully');
 
         res.json({
             user: { id: user.id, username: user.username, name: user.name },
